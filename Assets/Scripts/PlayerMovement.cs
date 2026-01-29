@@ -1,0 +1,157 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+[RequireComponent(typeof(Rigidbody2D))]
+public class PlayerMovement : MonoBehaviour
+{
+  public float moveSpeed = 8f;
+  public float jumpForce = 12f;
+  public float maxSpeed = 12f;
+
+  [Header("Ground Check")]
+  public Transform groundCheck;
+  public float groundCheckRadius = 0.2f;
+  public LayerMask groundLayer;
+
+  [Header("Balance")]
+  public float tiltStrength = 2f;
+  public float uprightStrength = 5f;
+
+  [Header("Wear Settings")]
+  public float wearSpeed = 0.15f;
+  public float minScale = 0.5f;
+  public float minMass = 0.8f;
+
+  [Header("Growth Settings")]
+  public float maxScale = 1.5f;
+  public float maxMass = 1.2f;
+  public float bubbleGrowAmount = 0.1f;
+
+  [SerializeField] private Transform visual;
+
+  private Rigidbody2D rb;
+
+  private float moveInput;
+  private bool jumpRequested;
+  private bool isGrounded;
+
+  private float initialScale;
+  private float initialMass;
+
+  public bool facingRight { get; private set; } = true;
+
+  void Awake()
+  {
+    rb = GetComponent<Rigidbody2D>();
+
+    rb.centerOfMass = new Vector2(0f, -0.5f);
+
+    initialScale = transform.localScale.x;
+    initialMass = rb.mass;
+  }
+
+  // 🔹 INPUT SYSTEM CALLBACKS (PlayerInput chama isso)
+
+  public void OnMove(InputAction.CallbackContext context)
+  {
+    moveInput = context.ReadValue<Vector2>().x;
+
+    if (Mathf.Abs(moveInput) > 0.01f)
+      ApplyWear();
+  }
+
+  public void OnJump(InputAction.CallbackContext context)
+  {
+    if (context.performed)
+      jumpRequested = true;
+  }
+
+  void Update()
+  {
+    isGrounded = Physics2D.OverlapCircle(
+        groundCheck.position,
+        groundCheckRadius,
+        groundLayer
+    );
+
+    if (moveInput > 0.01f && !facingRight)
+      SetFacing(true);
+    else if (moveInput < -0.01f && facingRight)
+      SetFacing(false);
+  }
+
+  void FixedUpdate()
+  {
+    rb.AddForce(Vector2.right * moveInput * moveSpeed, ForceMode2D.Force);
+
+    rb.linearVelocity = new Vector2(
+        Mathf.Clamp(rb.linearVelocity.x, -maxSpeed, maxSpeed),
+        rb.linearVelocity.y
+    );
+
+    if (isGrounded)
+    {
+      rb.AddTorque(-moveInput * tiltStrength);
+      rb.AddTorque(-rb.rotation * uprightStrength);
+
+      if (jumpRequested)
+      {
+        Jump();
+        jumpRequested = false;
+      }
+    }
+    else
+    {
+      rb.angularVelocity = 0f;
+    }
+  }
+
+  void Jump()
+  {
+    rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
+    rb.angularVelocity = 0f;
+    rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+  }
+
+  void ApplyWear()
+  {
+    float currentScale = transform.localScale.x;
+    float newScale = Mathf.Max(currentScale - wearSpeed * Time.deltaTime, minScale);
+
+    transform.localScale = new Vector3(newScale, newScale, 1f);
+
+    float t = Mathf.InverseLerp(initialScale, minScale, newScale);
+    rb.mass = Mathf.Lerp(initialMass, minMass, t);
+  }
+
+  void SetFacing(bool faceRight)
+  {
+    facingRight = faceRight;
+
+    Vector3 vScale = visual.localScale;
+    vScale.x = Mathf.Abs(vScale.x) * (facingRight ? 1 : -1);
+    visual.localScale = vScale;
+  }
+
+  public void Grow()
+  {
+    float currentScale = transform.localScale.x;
+    float newScale = Mathf.Min(currentScale + bubbleGrowAmount, maxScale);
+
+    transform.localScale = new Vector3(newScale, newScale, 1f);
+
+    float t = Mathf.InverseLerp(initialScale, maxScale, newScale);
+    rb.mass = Mathf.Lerp(initialMass, maxMass, t);
+  }
+
+  public void Shrink(float amount)
+  {
+    float currentScale = transform.localScale.x;
+    float newScale = Mathf.Max(currentScale - amount, minScale);
+
+    transform.localScale = new Vector3(newScale, newScale, 1f);
+
+    float t = Mathf.InverseLerp(initialScale, minScale, newScale);
+    rb.mass = Mathf.Lerp(initialMass, minMass, t);
+  }
+}

@@ -1,0 +1,119 @@
+# ================================
+# UNITY — root folders
+# ================================
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Unity crash logs
+*.log
+sysinfo.txt
+mono_crash.*
+
+# ================================
+# UNITY — not versioned assets
+# ================================
+*.pidb
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+ExportedObj/
+
+# Visual Scripting
+Assets/Unity.VisualScripting.Generated/
+
+# Temporary Addressables
+ServerData/
+Assets/StreamingAssets/aa*/
+Assets/Addressables_Temp*/
+Assets/AddressableAssetsData/*/*.bin*
+
+# Test Runner auto scenes
+Assets/InitTestScene*.unity*
+
+# ================================
+# EDITORS / IDEs
+# ================================
+.vs/
+.gradle/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.tmp
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+*.DotSettings.user
+.consulo/
+
+# JetBrains Rider plugin
+Assets/Plugins/Editor/JetBrains*
+
+# ================================
+# BUILDS
+# ================================
+*.apk
+*.aab
+*.app
+*.unitypackage
+*.unitypackage.meta
+
+# ================================
+# CLEAN ARCHITECTURE — .NET LAYERS
+# ================================
+Domain/**/bin/
+Domain/**/obj/
+Application/**/bin/
+Application/**/obj/
+Infrastructure/**/bin/
+Infrastructure/**/obj/
+
+# ================================
+# OS
+# ================================
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Linux
+*~
+
+# ================================
+# SENSITIVE DATA / KEYS
+# ================================
+*.env
+*.secret
+*.secrets
+*.key
+*.pem
+*.p12
+*.cert
+*.keystore
+*.jks
+
+*.local
+*.config.local
+*.development
+
+# ================================
+# Git LFS fallback
+# ================================
+Assets/**/*.png
+Assets/**/*.jpg
+Assets/**/*.jpeg
+Assets/**/*.wav
+Assets/**/*.mp3
+Assets/**/*.mp4
+Assets/**/*.psd

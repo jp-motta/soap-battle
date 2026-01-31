@@ -5137,7 +5137,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 0.8
+  m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_GravityScale: 5
@@ -5151,7 +5151,7 @@ Rigidbody2D:
   m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!114 &6385939768156269942
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5164,21 +5164,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5617bc796459bee43918447ecc13fe9f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
-  moveSpeed: 100
-  jumpForce: 20
-  maxSpeed: 12
+  walkSpeed: 6
+  runSpeed: 12
+  acceleration: 60
+  deceleration: 80
+  jumpForce: 24
+  normalGravityScale: 6
+  fastFallGravityScale: 9
   groundCheck: {fileID: 4514566635522338324}
-  groundCheckRadius: 2
+  groundCheckRadius: 1.5
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
-  tiltStrength: 1
-  uprightStrength: 1
   wearSpeed: 0.01
   minScale: 0.5
-  minMass: 0.8
   maxScale: 1.5
-  maxMass: 1.2
   bubbleGrowAmount: 0.2
   visual: {fileID: 8734801919959456861}
   knockbackCurve:
@@ -5227,7 +5227,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8ed57147eff8396418005950292a4a68, type: 2}
   - {fileID: 11400000, guid: d69ad8c994f78bb44a1135592706e9af, type: 2}
   - {fileID: 11400000, guid: ef9fabc716851c2438566bbc7e766b6c, type: 2}
-  slowMultiplier: 0.1
+  slowMultiplier: 0.5
   tileCheckYOffset: 1.5
 --- !u!70 &835471155732324180
 CapsuleCollider2D:

@@ -1,34 +1,21 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
 using UnityEngine.Tilemaps;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMovement : MonoBehaviour
 {
-  public float moveSpeed = 8f;
+  [Header("Movement")]
+  public float walkSpeed = 4f;
+  public float runSpeed = 8f;
+  public float acceleration = 60f;
+  public float deceleration = 80f;
   public float jumpForce = 12f;
-  public float maxSpeed = 12f;
 
-  [Header("Ground Check")]
-  public Transform groundCheck;
-  public float groundCheckRadius = 0.2f;
-  public LayerMask groundLayer;
-
-  [Header("Balance")]
-  public float tiltStrength = 2f;
-  public float uprightStrength = 5f;
-
-  [Header("Wear Settings")]
-  public float wearSpeed = 0.15f;
-  public float minScale = 0.5f;
-  public float minMass = 0.8f;
-
-  [Header("Growth Settings")]
-  public float maxScale = 1.5f;
-  public float maxMass = 1.2f;
-  public float bubbleGrowAmount = 0.1f;
-
-  [SerializeField] private Transform visual;
+  [Header("Gravity")]
+  public float normalGravityScale = 6f;
+  public float fastFallGravityScale = 9f;
 
   private Rigidbody2D rb;
 
@@ -36,10 +23,22 @@ public class PlayerMovement : MonoBehaviour
   private bool jumpRequested;
   private bool isGrounded;
 
-  private float initialScale;
-  private float initialMass;
+  [Header("Ground Check")]
+  public Transform groundCheck;
+  public float groundCheckRadius = 0.2f;
+  public LayerMask groundLayer;
 
-  public bool facingRight { get; private set; } = true;
+  [Header("Wear Settings")]
+  public float wearSpeed = 0.15f;
+  public float minScale = 0.5f;
+
+  private float initialScale;
+
+  [Header("Growth Settings")]
+  public float maxScale = 1.5f;
+  public float bubbleGrowAmount = 0.1f;
+
+  [SerializeField] private Transform visual;
 
   [Header("Knockback")]
   public AnimationCurve knockbackCurve = AnimationCurve.EaseInOut(0, 0.2f, 1, 2f);
@@ -49,31 +48,30 @@ public class PlayerMovement : MonoBehaviour
   public TileBase[] slowTiles;
   public float slowMultiplier = 0.5f;
   public float tileCheckYOffset = 1.25f;
-
   private float currentSpeedMultiplier = 1f;
 
+  public bool facingRight { get; private set; } = true;
 
   void Awake()
   {
     rb = GetComponent<Rigidbody2D>();
-
-    rb.centerOfMass = new Vector2(0f, -0.5f);
-
     initialScale = transform.localScale.x;
-    initialMass = rb.mass;
 
     FindGroundTilemap();
   }
 
-  // 🔹 INPUT SYSTEM CALLBACKS (PlayerInput chama isso)
+  private float verticalInput;
 
   public void OnMove(InputAction.CallbackContext context)
   {
-    moveInput = context.ReadValue<Vector2>().x;
+    Vector2 input = context.ReadValue<Vector2>();
+    moveInput = input.x;
+    verticalInput = input.y;
 
     if (Mathf.Abs(moveInput) > 0.01f)
       ApplyWear();
   }
+
 
   public void OnJump(InputAction.CallbackContext context)
   {
@@ -99,31 +97,30 @@ public class PlayerMovement : MonoBehaviour
 
   void FixedUpdate()
   {
-    rb.AddForce(
-      Vector2.right * moveInput * moveSpeed * currentSpeedMultiplier,
-      ForceMode2D.Force
-    );
-
-
-    rb.linearVelocity = new Vector2(
-        Mathf.Clamp(rb.linearVelocity.x, -maxSpeed, maxSpeed),
-        rb.linearVelocity.y
-    );
+    ApplyHorizontalMovement();
 
     if (isGrounded)
     {
-      rb.AddTorque(-moveInput * tiltStrength);
-      rb.AddTorque(-rb.rotation * uprightStrength);
-
       if (jumpRequested)
       {
         Jump();
         jumpRequested = false;
       }
+
+      rb.gravityScale = normalGravityScale;
     }
-    else
+
+    if (!isGrounded)
     {
-      rb.angularVelocity = 0f;
+      if (verticalInput < -0.5f && rb.linearVelocity.y <= 0f)
+      {
+        rb.gravityScale = fastFallGravityScale;
+        Debug.Log("Fast Fall Applied");
+      }
+      else
+      {
+        rb.gravityScale = normalGravityScale;
+      }
     }
   }
 
@@ -134,6 +131,33 @@ public class PlayerMovement : MonoBehaviour
     rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
   }
 
+  void ApplyHorizontalMovement()
+  {
+    float targetSpeed = 0f;
+
+    if (Mathf.Abs(moveInput) > 0.01f)
+    {
+      bool walking = Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed;
+      float baseSpeed = walking ? walkSpeed : runSpeed;
+
+      targetSpeed = moveInput * baseSpeed;
+    }
+
+    float speedDiff = targetSpeed - rb.linearVelocity.x;
+
+    float accelRate = Mathf.Abs(targetSpeed) > 0.01f
+        ? acceleration
+        : deceleration;
+
+    float movement = speedDiff * accelRate * Time.fixedDeltaTime;
+
+    rb.linearVelocity = new Vector2(
+        rb.linearVelocity.x + movement,
+        rb.linearVelocity.y
+    );
+  }
+
+
   void ApplyWear()
   {
     float currentScale = transform.localScale.x;
@@ -142,7 +166,6 @@ public class PlayerMovement : MonoBehaviour
     transform.localScale = new Vector3(newScale, newScale, 1f);
 
     float t = Mathf.InverseLerp(initialScale, minScale, newScale);
-    rb.mass = Mathf.Lerp(initialMass, minMass, t);
   }
 
   void SetFacing(bool faceRight)
@@ -162,7 +185,6 @@ public class PlayerMovement : MonoBehaviour
     transform.localScale = new Vector3(newScale, newScale, 1f);
 
     float t = Mathf.InverseLerp(initialScale, maxScale, newScale);
-    rb.mass = Mathf.Lerp(initialMass, maxMass, t);
   }
 
   public void Shrink(float amount)
@@ -173,7 +195,6 @@ public class PlayerMovement : MonoBehaviour
     transform.localScale = new Vector3(newScale, newScale, 1f);
 
     float t = Mathf.InverseLerp(initialScale, minScale, newScale);
-    rb.mass = Mathf.Lerp(initialMass, minMass, t);
   }
 
   public void ApplyKnockback(Vector2 direction, float baseForce)
@@ -212,15 +233,6 @@ public class PlayerMovement : MonoBehaviour
     Vector3 cellCenter = groundTilemap.GetCellCenterWorld(cellPos);
 
     TileBase tileUnderPlayer = groundTilemap.GetTile(cellPos);
-
-    Debug.Log(
-      $"CheckPos: {checkPos} | " +
-      $"Cell: {cellPos} | " +
-      $"CellCenter: {cellCenter} | " +
-      $"Tile: {(tileUnderPlayer != null ? tileUnderPlayer.name : "null")}"
-    );
-
-
 
     if (tileUnderPlayer == null)
     {

@@ -1,7 +1,5 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Rendering;
-using UnityEngine.Tilemaps;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMovement : MonoBehaviour
@@ -11,22 +9,29 @@ public class PlayerMovement : MonoBehaviour
   public float runSpeed = 8f;
   public float acceleration = 60f;
   public float deceleration = 80f;
+
+  [Header("Jump Control")]
   public float jumpForce = 12f;
+  public float jumpCutMultiplier = 0.5f;
+  private bool jumpRequested;
+
+  [Header("Air Jump")]
+  public int maxAirJumps = 1;
+  public float airJumpForceMultiplier = 1f; // pode ser < 1 para pulo aéreo menor
+  private int airJumpsRemaining;
 
   [Header("Gravity")]
   public float normalGravityScale = 6f;
   public float fastFallGravityScale = 9f;
 
   private Rigidbody2D rb;
-
   private float moveInput;
-  private bool jumpRequested;
   private bool isGrounded;
 
   [Header("Ground Check")]
-  public Transform groundCheck;
-  public float groundCheckRadius = 0.2f;
   public LayerMask groundLayer;
+  private Collider2D col;
+
 
   [Header("Wear Settings")]
   public float wearSpeed = 0.15f;
@@ -43,21 +48,14 @@ public class PlayerMovement : MonoBehaviour
   [Header("Knockback")]
   public AnimationCurve knockbackCurve = AnimationCurve.EaseInOut(0, 0.2f, 1, 2f);
 
-  [Header("Surface Effects")]
-  private Tilemap groundTilemap;
-  public TileBase[] slowTiles;
-  public float slowMultiplier = 0.5f;
-  public float tileCheckYOffset = 1.25f;
-  private float currentSpeedMultiplier = 1f;
-
   public bool facingRight { get; private set; } = true;
 
   void Awake()
   {
     rb = GetComponent<Rigidbody2D>();
-    initialScale = transform.localScale.x;
+    col = GetComponent<Collider2D>();
 
-    FindGroundTilemap();
+    initialScale = transform.localScale.x;
   }
 
   private float verticalInput;
@@ -75,47 +73,62 @@ public class PlayerMovement : MonoBehaviour
 
   public void OnJump(InputAction.CallbackContext context)
   {
-    if (context.performed)
+    if (context.started)
+    {
       jumpRequested = true;
+    }
+
+    if (context.canceled)
+    {
+      CutJump();
+    }
   }
 
   void Update()
   {
-    isGrounded = Physics2D.OverlapCircle(
-        groundCheck.position,
-        groundCheckRadius,
-        groundLayer
-    );
+    CheckGrounded();
+
+    if (isGrounded)
+    {
+      airJumpsRemaining = maxAirJumps;
+    }
 
     if (moveInput > 0.01f && !facingRight)
       SetFacing(true);
     else if (moveInput < -0.01f && facingRight)
       SetFacing(false);
-
-    CheckSurfaceTile();
   }
 
   void FixedUpdate()
   {
     ApplyHorizontalMovement();
 
-    if (isGrounded)
+    // 🔹 PULO (chão ou ar)
+    if (jumpRequested)
     {
-      if (jumpRequested)
+      if (isGrounded)
       {
         Jump();
-        jumpRequested = false;
+      }
+      else if (airJumpsRemaining > 0)
+      {
+        AirJump();
+        airJumpsRemaining--;
       }
 
-      rb.gravityScale = normalGravityScale;
+      jumpRequested = false;
     }
 
-    if (!isGrounded)
+    // 🔹 GRAVIDADE / FAST FALL
+    if (isGrounded)
+    {
+      rb.gravityScale = normalGravityScale;
+    }
+    else
     {
       if (verticalInput < -0.5f && rb.linearVelocity.y <= 0f)
       {
         rb.gravityScale = fastFallGravityScale;
-        Debug.Log("Fast Fall Applied");
       }
       else
       {
@@ -127,8 +140,29 @@ public class PlayerMovement : MonoBehaviour
   void Jump()
   {
     rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
-    rb.angularVelocity = 0f;
     rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+  }
+
+  void CutJump()
+  {
+    if (rb.linearVelocity.y > 0)
+    {
+      rb.linearVelocity = new Vector2(
+        rb.linearVelocity.x,
+        rb.linearVelocity.y * jumpCutMultiplier
+      );
+    }
+  }
+
+  void AirJump()
+  {
+    // Cancela queda / subida atual
+    rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
+
+    rb.AddForce(
+      Vector2.up * jumpForce * airJumpForceMultiplier,
+      ForceMode2D.Impulse
+    );
   }
 
   void ApplyHorizontalMovement()
@@ -157,7 +191,21 @@ public class PlayerMovement : MonoBehaviour
     );
   }
 
+  void CheckGrounded()
+  {
+    Vector2 bottomCenter = new Vector2(
+      col.bounds.center.x,
+      col.bounds.min.y
+    );
 
+    float checkRadius = 0.1f;
+
+    isGrounded = Physics2D.OverlapCircle(
+      bottomCenter,
+      checkRadius,
+      groundLayer
+    );
+  }
   void ApplyWear()
   {
     float currentScale = transform.localScale.x;
@@ -214,59 +262,5 @@ public class PlayerMovement : MonoBehaviour
 
     rb.linearVelocity = Vector2.zero;
     rb.AddForce(direction.normalized * baseForce * knockbackMultiplier, ForceMode2D.Impulse);
-  }
-
-  void CheckSurfaceTile()
-  {
-    if (groundTilemap == null || slowTiles == null || slowTiles.Length == 0)
-    {
-      currentSpeedMultiplier = 1f;
-      return;
-    }
-
-    Vector3 checkPos = groundCheck.position;
-    checkPos.y -= tileCheckYOffset;
-
-    Vector3Int cellPos = groundTilemap.WorldToCell(checkPos);
-
-    // FORÇA o centro exato do tile
-    Vector3 cellCenter = groundTilemap.GetCellCenterWorld(cellPos);
-
-    TileBase tileUnderPlayer = groundTilemap.GetTile(cellPos);
-
-    if (tileUnderPlayer == null)
-    {
-      currentSpeedMultiplier = 1f;
-      return;
-    }
-
-    for (int i = 0; i < slowTiles.Length; i++)
-    {
-      if (tileUnderPlayer == slowTiles[i])
-      {
-        currentSpeedMultiplier = slowMultiplier;
-        return;
-      }
-    }
-
-    currentSpeedMultiplier = 1f;
-  }
-
-  void FindGroundTilemap()
-  {
-    GameObject tilemapObj = GameObject.FindGameObjectWithTag("Tilemap");
-
-    if (tilemapObj == null)
-    {
-      Debug.LogError($"PlayerMovement: Nenhum GameObject com a tag 'Tilemap' foi encontrado!");
-      return;
-    }
-
-    groundTilemap = tilemapObj.GetComponent<Tilemap>();
-
-    if (groundTilemap == null)
-    {
-      Debug.LogError("PlayerMovement: O objeto com a tag Tilemap não possui componente Tilemap!");
-    }
   }
 }

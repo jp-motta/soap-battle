@@ -12,8 +12,13 @@ public class Weapon : MonoBehaviour
 
   private float lastFireTime;
 
+  [Header("Ammo")]
+  public int maxAmmo = 250;
+  public int currentAmmo;
+  public bool infiniteAmmo = false;
+
   [Header("Player")]
-  public Transform player; // arrasta o player aqui
+  public Transform player;
   private PlayerMovement playerController;
   private PlayerInput playerInput;
 
@@ -23,22 +28,31 @@ public class Weapon : MonoBehaviour
   private Vector2 gamepadAimInput;
   private Vector2 lastAimDirection = Vector2.right;
 
+  [Header("UI")]
+  public PlayerAmmoUI ammoUI;
+
+  [Header("Bubble Shot")]
+  public int bubblesPerShot = 5;
+  public float coneAngle = 25f;
+
   void Start()
   {
     playerController = player.GetComponent<PlayerMovement>();
     playerInput = GetComponentInParent<PlayerInput>();
 
+    currentAmmo = maxAmmo;
+
     DetectPlayerDevices();
+    UpdateAmmoUI();
   }
+
 
   void DetectPlayerDevices()
   {
-    // Gamepad atribuído a ESTE player
     playerGamepad = playerInput.devices
       .OfType<Gamepad>()
       .FirstOrDefault();
 
-    // Mouse só pertence a um player (normalmente P1)
     usesMouse = playerInput.devices.Any(d => d is Mouse);
   }
 
@@ -62,16 +76,13 @@ public class Weapon : MonoBehaviour
     gamepadAimInput = playerGamepad.leftStick.ReadValue();
 
     if (gamepadAimInput.magnitude >= 0.1f)
-    {
       lastAimDirection = gamepadAimInput.normalized;
-    }
   }
 
   void HandleMouseInput()
   {
     if (!usesMouse || Mouse.current == null) return;
 
-    // Se o gamepad estiver ativo, ele tem prioridade
     if (playerGamepad != null && gamepadAimInput.magnitude >= 0.1f)
       return;
 
@@ -88,14 +99,10 @@ public class Weapon : MonoBehaviour
 
   void Aim()
   {
-    Vector2 direction = lastAimDirection;
+    if (lastAimDirection.sqrMagnitude < 0.001f) return;
 
-    if (direction.sqrMagnitude < 0.001f)
-      return;
+    float angle = Mathf.Atan2(lastAimDirection.y, lastAimDirection.x) * Mathf.Rad2Deg;
 
-    float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-
-    // Corrige para lado que o jogador está olhando
     if (!playerController.facingRight)
       angle += 180f;
 
@@ -108,43 +115,81 @@ public class Weapon : MonoBehaviour
 
   void HandleShoot()
   {
-    // Gamepad
-    if (playerGamepad != null &&
-        playerGamepad.squareButton.isPressed &&
-        Time.time >= lastFireTime + fireRate)
+    if (Time.time < lastFireTime + fireRate)
+      return;
+
+    bool wantsShoot =
+      (playerGamepad != null && playerGamepad.squareButton.isPressed) ||
+      (usesMouse && Mouse.current != null && Mouse.current.leftButton.isPressed);
+
+    if (!wantsShoot)
+      return;
+
+    if (!infiniteAmmo && currentAmmo <= 0)
     {
-      Shoot();
-      lastFireTime = Time.time;
+      // Aqui você pode tocar som de "sem munição"
       return;
     }
 
-    // Mouse (somente se este player usa mouse)
-    if (usesMouse &&
-        Mouse.current != null &&
-        Mouse.current.leftButton.isPressed &&
-        Time.time >= lastFireTime + fireRate)
+    Shoot();
+    lastFireTime = Time.time;
+
+    if (!infiniteAmmo)
     {
-      Shoot();
-      lastFireTime = Time.time;
+      currentAmmo--;
+      UpdateAmmoUI();
     }
+
   }
 
   void Shoot()
   {
     Vector2 shootDirection = lastAimDirection;
 
-    // Limita disparo aos 180 graus à frente do jogador
     Vector2 playerForward = playerController.facingRight ? Vector2.right : Vector2.left;
     if (Vector2.Dot(shootDirection, playerForward) < 0)
       return;
 
-    GameObject projectile = Instantiate(
-      projectilePrefab,
-      firePoint.position,
-      Quaternion.identity
-    );
+    float halfCone = coneAngle * 0.5f;
 
-    Rigidbody2D rb = projectile.GetComponent<Rigidbody2D>();
-    rb.linearVelocity = shootDirection * projectileSpeed;
+    for (int i = 0; i < bubblesPerShot; i++)
+    {
+      float angleOffset = Random.Range(-halfCone, halfCone);
+      Vector2 finalDirection = Quaternion.Euler(0, 0, angleOffset) * shootDirection;
+
+      GameObject projectile = Instantiate(
+        projectilePrefab,
+        firePoint.position,
+        Quaternion.identity
+      );
+
+      BubbleProjectile bubble = projectile.GetComponent<BubbleProjectile>();
+      bubble.Launch(finalDirection);
+    }
+
+    lastFireTime = Time.time;
+  }
+
+  // -------------------------
+  // AMMO API
+  // -------------------------
+
+  public void Reload(int amount)
+  {
+    currentAmmo = Mathf.Clamp(currentAmmo + amount, 0, maxAmmo);
+    UpdateAmmoUI();
+  }
+
+  public void FullReload()
+  {
+    currentAmmo = maxAmmo;
+    UpdateAmmoUI();
+  }
+
+
+  void UpdateAmmoUI()
+  {
+    if (ammoUI != null)
+      ammoUI.UpdateAmmo(currentAmmo, maxAmmo);
   }
 }

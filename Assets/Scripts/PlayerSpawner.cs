@@ -7,6 +7,9 @@ public class PlayerSpawner : MonoBehaviour
   public TextMeshProUGUI player1ScoreUI;
   public TextMeshProUGUI player2ScoreUI;
 
+  public TextMeshProUGUI player1AmmoUI;
+  public TextMeshProUGUI player2AmmoUI;
+
   public Sprite player1Sprite;
   public Sprite player2Sprite;
 
@@ -17,17 +20,21 @@ public class PlayerSpawner : MonoBehaviour
     playerCount++;
 
     var score = playerInput.GetComponent<PlayerScore>();
+    var ammo = playerInput.GetComponent<PlayerAmmoUI>();
 
     score.playerIndex = playerCount;
+    ammo.SetPlayerIndex(playerCount - 1);
 
     if (playerCount == 1)
     {
       score.scoreText = player1ScoreUI;
+      ammo.ammoText = player1AmmoUI;
       SetPlayerSprite(playerInput.gameObject, player1Sprite);
     }
     else if (playerCount == 2)
     {
       score.scoreText = player2ScoreUI;
+      ammo.ammoText = player2AmmoUI;
       SetPlayerSprite(playerInput.gameObject, player2Sprite);
     }
   }

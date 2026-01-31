@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class BubblePickup : MonoBehaviour
+public class LifePickup : MonoBehaviour
 {
   private void OnTriggerEnter2D(Collider2D other)
   {

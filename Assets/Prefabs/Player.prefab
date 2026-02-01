@@ -107,14 +107,14 @@ MonoBehaviour:
   projectilePrefab: {fileID: 1261947904865278731, guid: 1c91cedad0e91f94ba06fd6421574917, type: 3}
   firePoint: {fileID: 5365153746964737039}
   projectileSpeed: 40
-  fireRate: 0.1
+  fireRate: 0.05
   maxAmmo: 250
   currentAmmo: 250
   infiniteAmmo: 0
   player: {fileID: 8316322516770979967}
   ammoUI: {fileID: 361758992395102239}
   bubblesPerShot: 1
-  coneAngle: 1
+  coneAngle: 10
 --- !u!1 &1495472948883401065
 GameObject:
   m_ObjectHideFlags: 0
@@ -5386,6 +5386,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   knockbackHorizontalDamping: 0.2
+  knockbackAngle: 35
 --- !u!114 &-8182631646608396771
 MonoBehaviour:
   m_ObjectHideFlags: 0

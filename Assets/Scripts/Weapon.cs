@@ -62,8 +62,13 @@ public class Weapon : MonoBehaviour
     HandleMouseInput();
 
     Aim();
+
+    bool holdingShoot = IsHoldingShoot();
+    playerController.isShooting = holdingShoot;
+
     HandleShoot();
   }
+
 
   // -------------------------
   // INPUT
@@ -115,21 +120,14 @@ public class Weapon : MonoBehaviour
 
   void HandleShoot()
   {
+    if (!IsHoldingShoot())
+      return;
+
     if (Time.time < lastFireTime + fireRate)
       return;
 
-    bool wantsShoot =
-      (playerGamepad != null && playerGamepad.squareButton.isPressed) ||
-      (usesMouse && Mouse.current != null && Mouse.current.leftButton.isPressed);
-
-    if (!wantsShoot)
-      return;
-
     if (!infiniteAmmo && currentAmmo <= 0)
-    {
-      // Aqui você pode tocar som de "sem munição"
       return;
-    }
 
     Shoot();
     lastFireTime = Time.time;
@@ -139,7 +137,6 @@ public class Weapon : MonoBehaviour
       currentAmmo--;
       UpdateAmmoUI();
     }
-
   }
 
   void Shoot()
@@ -191,5 +188,12 @@ public class Weapon : MonoBehaviour
   {
     if (ammoUI != null)
       ammoUI.UpdateAmmo(currentAmmo, maxAmmo);
+  }
+
+  bool IsHoldingShoot()
+  {
+    return
+      (playerGamepad != null && playerGamepad.squareButton.isPressed) ||
+      (usesMouse && Mouse.current != null && Mouse.current.leftButton.isPressed);
   }
 }

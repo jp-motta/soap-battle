@@ -9,11 +9,10 @@ public class BubbleProjectile : MonoBehaviour
   public float lifetime = 2.5f;
 
   [Header("Gameplay")]
-  public float shrinkAmount = 0.05f;
-  public float knockbackForce = 10f;
+  public float knockbackForce = 25f;
 
   private Rigidbody2D rb;
-  private Vector2 moveDirection;
+  private Vector2 attackDirection;
 
   void Awake()
   {
@@ -22,9 +21,10 @@ public class BubbleProjectile : MonoBehaviour
 
   public void Launch(Vector2 direction)
   {
-    moveDirection = direction.normalized;
-    rb.linearVelocity = moveDirection * initialSpeed;
+    attackDirection = direction.normalized;
+    rb.linearVelocity = attackDirection * initialSpeed;
   }
+
 
   void Start()
   {
@@ -43,13 +43,12 @@ public class BubbleProjectile : MonoBehaviour
 
   void OnCollisionEnter2D(Collision2D collision)
   {
-    PlayerMovement player = collision.collider.GetComponent<PlayerMovement>();
-    if (player != null)
+    PlayerHealth playerHealth = collision.collider.GetComponent<PlayerHealth>();
+    if (playerHealth != null)
     {
-      Vector2 knockDir = (player.transform.position - transform.position).normalized;
-      player.ApplyKnockback(knockDir, knockbackForce);
+      playerHealth.ApplyKnockback(-attackDirection, knockbackForce);
+      playerHealth.Damage(0.5f);
 
-      player.Shrink(shrinkAmount);
       Destroy(gameObject);
       return;
     }

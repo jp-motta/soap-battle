@@ -65,7 +65,7 @@ public class PlayerHealth : MonoBehaviour
   // DEATH / RESPAWN
   // -------------------------
 
-  void Die()
+  public void Die()
   {
     rb.linearVelocity = Vector2.zero;
     rb.angularVelocity = 0f;

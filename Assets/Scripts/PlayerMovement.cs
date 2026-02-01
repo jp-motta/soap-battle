@@ -32,30 +32,21 @@ public class PlayerMovement : MonoBehaviour
   public LayerMask groundLayer;
   private Collider2D col;
 
-
-  [Header("Wear Settings")]
-  public float wearSpeed = 0.15f;
-  public float minScale = 0.5f;
-
-  private float initialScale;
-
-  [Header("Growth Settings")]
-  public float maxScale = 1.5f;
-  public float bubbleGrowAmount = 0.1f;
-
   [SerializeField] private Transform visual;
 
-  [Header("Knockback")]
-  public AnimationCurve knockbackCurve = AnimationCurve.EaseInOut(0, 0.2f, 1, 2f);
-
   public bool facingRight { get; private set; } = true;
+
+  [Header("Combat State")]
+  public bool isShooting { get; set; } = false;
+  private float shootingMultiplier = 1f;
+
+  private PlayerHealth playerHealth;
 
   void Awake()
   {
     rb = GetComponent<Rigidbody2D>();
     col = GetComponent<Collider2D>();
-
-    initialScale = transform.localScale.x;
+    playerHealth = GetComponent<PlayerHealth>();
   }
 
   private float verticalInput;
@@ -67,9 +58,8 @@ public class PlayerMovement : MonoBehaviour
     verticalInput = input.y;
 
     if (Mathf.Abs(moveInput) > 0.01f)
-      ApplyWear();
+      playerHealth.Damage(0.01f);
   }
-
 
   public void OnJump(InputAction.CallbackContext context)
   {
@@ -167,6 +157,15 @@ public class PlayerMovement : MonoBehaviour
 
   void ApplyHorizontalMovement()
   {
+    if (isShooting)
+    {
+      shootingMultiplier = 0.5f;
+    }
+    else
+    {
+      shootingMultiplier = 1f;
+    }
+
     float targetSpeed = 0f;
 
     if (Mathf.Abs(moveInput) > 0.01f)
@@ -174,7 +173,7 @@ public class PlayerMovement : MonoBehaviour
       bool walking = Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed;
       float baseSpeed = walking ? walkSpeed : runSpeed;
 
-      targetSpeed = moveInput * baseSpeed;
+      targetSpeed = moveInput * baseSpeed * shootingMultiplier;
     }
 
     float speedDiff = targetSpeed - rb.linearVelocity.x;
@@ -206,15 +205,6 @@ public class PlayerMovement : MonoBehaviour
       groundLayer
     );
   }
-  void ApplyWear()
-  {
-    float currentScale = transform.localScale.x;
-    float newScale = Mathf.Max(currentScale - wearSpeed * Time.deltaTime, minScale);
-
-    transform.localScale = new Vector3(newScale, newScale, 1f);
-
-    float t = Mathf.InverseLerp(initialScale, minScale, newScale);
-  }
 
   void SetFacing(bool faceRight)
   {
@@ -223,44 +213,5 @@ public class PlayerMovement : MonoBehaviour
     Vector3 vScale = visual.localScale;
     vScale.x = Mathf.Abs(vScale.x) * (facingRight ? 1 : -1);
     visual.localScale = vScale;
-  }
-
-  public void Grow()
-  {
-    float currentScale = transform.localScale.x;
-    float newScale = Mathf.Min(currentScale + bubbleGrowAmount, maxScale);
-
-    transform.localScale = new Vector3(newScale, newScale, 1f);
-
-    float t = Mathf.InverseLerp(initialScale, maxScale, newScale);
-  }
-
-  public void Shrink(float amount)
-  {
-    float currentScale = transform.localScale.x;
-    float newScale = Mathf.Max(currentScale - amount, minScale);
-
-    transform.localScale = new Vector3(newScale, newScale, 1f);
-
-    float t = Mathf.InverseLerp(initialScale, minScale, newScale);
-  }
-
-  public void ApplyKnockback(Vector2 direction, float baseForce)
-  {
-    Rigidbody2D rb = GetComponent<Rigidbody2D>();
-
-    // Quanto menor o jogador, maior o knockback
-    // Exemplo: scale varia de 0.5 (pequeno) até 1.5 (grande)
-    float sizeFactor = Mathf.InverseLerp(
-      maxScale,   // sabonete grande
-      minScale,   // sabonete pequeno
-      transform.localScale.x
-    );
-
-    // Curva deixa a diferença mais dramática
-    float knockbackMultiplier = knockbackCurve.Evaluate(sizeFactor);
-
-    rb.linearVelocity = Vector2.zero;
-    rb.AddForce(direction.normalized * baseForce * knockbackMultiplier, ForceMode2D.Impulse);
   }
 }

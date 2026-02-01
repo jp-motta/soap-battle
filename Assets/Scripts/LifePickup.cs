@@ -4,11 +4,11 @@ public class LifePickup : MonoBehaviour
 {
   private void OnTriggerEnter2D(Collider2D other)
   {
-    PlayerMovement player = other.GetComponent<PlayerMovement>();
+    PlayerHealth playerHealth = other.GetComponent<PlayerHealth>();
 
-    if (player != null)
+    if (playerHealth != null)
     {
-      player.Grow();
+      playerHealth.Heal(25f);
       Destroy(gameObject);
     }
   }

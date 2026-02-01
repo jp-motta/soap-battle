@@ -61,7 +61,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 1
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!212 &3665338713419624345
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -132,11 +132,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eef59b441cd0a564ba66dda80b724ac1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Projectile
-  initialSpeed: 25
-  deceleration: 20
-  lifetime: 1
-  shrinkAmount: 0.005
-  knockbackForce: 50
+  initialSpeed: 30
+  deceleration: 5
+  lifetime: 2
+  knockbackForce: 25
 --- !u!58 &-5193642649554559430
 CircleCollider2D:
   m_ObjectHideFlags: 0

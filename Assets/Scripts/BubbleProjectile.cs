@@ -46,8 +46,8 @@ public class BubbleProjectile : MonoBehaviour
     PlayerHealth playerHealth = collision.collider.GetComponent<PlayerHealth>();
     if (playerHealth != null)
     {
-      playerHealth.ApplyKnockback(-attackDirection, knockbackForce);
-      playerHealth.Damage(0.5f);
+      //playerHealth.ApplyKnockback(-attackDirection, knockbackForce);
+      playerHealth.Damage(2f);
 
       Destroy(gameObject);
       return;

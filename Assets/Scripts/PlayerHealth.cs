@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerHealth : MonoBehaviour
@@ -12,6 +11,9 @@ public class PlayerHealth : MonoBehaviour
   [Header("Scale by Life")]
   public float minScale = 0.5f;
   public float maxScale = 1.5f;
+
+  [Header("Death FX")]
+  public GameObject deathFoamFX;
 
   [Header("Knockback")]
   public AnimationCurve knockbackByLife;
@@ -69,6 +71,12 @@ public class PlayerHealth : MonoBehaviour
   {
     rb.linearVelocity = Vector2.zero;
     rb.angularVelocity = 0f;
+
+    Instantiate(
+      deathFoamFX,
+      transform.position,
+      Quaternion.identity
+    );
 
     playerRespawner.StartCoroutine(
       playerRespawner.RespawnAfterDelay(gameObject)

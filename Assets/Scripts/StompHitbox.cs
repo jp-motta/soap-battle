@@ -25,6 +25,9 @@ public class StompHitbox : MonoBehaviour
     if (targetPlayerHealth == null || targetPlayerHealth == playerHealth)
       return;
 
+    if (playerHealth.currentLife - 20f < targetPlayerHealth.currentLife)
+      return;
+
     // Mata o jogador pisado
     targetPlayerHealth.Die();
   }

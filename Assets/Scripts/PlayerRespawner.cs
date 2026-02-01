@@ -8,12 +8,7 @@ public class PlayerRespawner : MonoBehaviour
 
   public IEnumerator RespawnAfterDelay(GameObject player)
   {
-    player.SetActive(false);
-
-    Rigidbody2D playerRigidbody = player.GetComponent<Rigidbody2D>();
-    PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
-
-    playerHealth.ResetHealth();
+    DisablePlayer(player);
 
     // 🚫 Para a câmera de seguir este jogador
     if (SmashCamera2D.Instance != null)
@@ -21,7 +16,11 @@ public class PlayerRespawner : MonoBehaviour
 
     yield return new WaitForSeconds(respawnDelay);
 
-    player.SetActive(true);
+    Rigidbody2D playerRigidbody = player.GetComponent<Rigidbody2D>();
+    PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+
+    EnablePlayer(player);
+    playerHealth.ResetHealth();
 
     player.transform.position = respawnPoint.position;
 
@@ -32,6 +31,24 @@ public class PlayerRespawner : MonoBehaviour
 
     // ✅ Volta a ser seguido pela câmera
     if (SmashCamera2D.Instance != null)
-      SmashCamera2D.Instance.RegisterPlayer(transform);
+      SmashCamera2D.Instance.RegisterPlayer(player.transform);
+  }
+
+  void DisablePlayer(GameObject player)
+  {
+    player.GetComponent<Collider2D>().enabled = false;
+    player.GetComponent<Rigidbody2D>().simulated = false;
+
+    foreach (var r in player.GetComponentsInChildren<Renderer>())
+      r.enabled = false;
+  }
+
+  void EnablePlayer(GameObject player)
+  {
+    player.GetComponent<Collider2D>().enabled = true;
+    player.GetComponent<Rigidbody2D>().simulated = true;
+
+    foreach (var r in player.GetComponentsInChildren<Renderer>())
+      r.enabled = true;
   }
 }

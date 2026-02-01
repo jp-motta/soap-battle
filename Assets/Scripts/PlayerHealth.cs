@@ -21,6 +21,7 @@ public class PlayerHealth : MonoBehaviour
 
   private Rigidbody2D rb;
   private PlayerRespawner playerRespawner;
+  private bool isRespawning;
 
   void Awake()
   {
@@ -67,8 +68,12 @@ public class PlayerHealth : MonoBehaviour
   // DEATH / RESPAWN
   // -------------------------
 
-  public void Die()
+  void Die()
   {
+    if (isRespawning) return;
+
+    isRespawning = true;
+
     rb.linearVelocity = Vector2.zero;
     rb.angularVelocity = 0f;
 
@@ -85,6 +90,8 @@ public class PlayerHealth : MonoBehaviour
 
   public void ResetHealth()
   {
+    isRespawning = false;
+
     currentLife = initialLife;
     UpdateScale();
   }

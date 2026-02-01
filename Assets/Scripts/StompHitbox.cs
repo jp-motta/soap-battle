@@ -29,6 +29,6 @@ public class StompHitbox : MonoBehaviour
       return;
 
     // Mata o jogador pisado
-    targetPlayerHealth.Die();
+    targetPlayerHealth.Damage(100f);
   }
 }

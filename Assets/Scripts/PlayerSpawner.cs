@@ -17,6 +17,7 @@ public class PlayerSpawner : MonoBehaviour
 
   public void OnPlayerJoined(PlayerInput playerInput)
   {
+    Debug.Log("PlayerSpawner: Jogador entrou: " + playerInput.gameObject.name);
     playerCount++;
 
     var score = playerInput.GetComponent<PlayerScore>();
